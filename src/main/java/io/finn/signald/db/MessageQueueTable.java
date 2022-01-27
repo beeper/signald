@@ -63,7 +63,10 @@ public class MessageQueueTable {
     statement.setLong(10, envelope.getServerReceivedTimestamp());
     statement.setLong(11, envelope.getServerDeliveredTimestamp());
     statement.setString(12, envelope.getServerGuid());
+    final long startTime = System.currentTimeMillis();
     statement.executeUpdate();
+    final long endTime = System.currentTimeMillis();
+    System.out.println("ohea Took " + (endTime - startTime) + " to executeUpdate");
 
     ResultSet generatedKeys = statement.getGeneratedKeys();
     generatedKeys.next();

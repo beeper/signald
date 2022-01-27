@@ -102,8 +102,14 @@ public class SubscribeRequest implements RequestType<Empty> {
     @Override
     public void broadcastIncomingMessage(SignalServiceEnvelope envelope, SignalServiceContent content) throws IOException {
       try {
+        long startTime = System.currentTimeMillis();
         IncomingMessage message = new IncomingMessage(envelope, content, aci);
+        long endTime = System.currentTimeMillis();
+        System.out.println("ohea Took " + (endTime - startTime) + " to create IncomingMessage");
+        startTime = System.currentTimeMillis();
         broadcast(new ClientMessageWrapper(account, message));
+        endTime = System.currentTimeMillis();
+        System.out.println("ohea Took " + (endTime - startTime) + " to broadcast");
       } catch (NoSuchAccountError | ServerNotFoundError | InvalidProxyError | InternalError e) {
         logger.warn("Exception while broadcasting incoming message: " + e);
       }

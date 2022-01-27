@@ -1032,8 +1032,14 @@ public class Manager {
           Optional<SignalServiceEnvelope> result = websocket.readOrEmpty(unit.toMillis(timeout), encryptedEnvelope -> {
             // store message on disk, before acknowledging receipt to the server
             try {
+              long startTime = System.currentTimeMillis();
               long id = messageQueueTable.storeEnvelope(encryptedEnvelope);
+              long endTime = System.currentTimeMillis();
+              System.out.println("ohea Took " + (endTime - startTime) + " to storeEnvelope");
+              startTime = System.currentTimeMillis();
               databaseId.setValue(id);
+              endTime = System.currentTimeMillis();
+              System.out.println("ohea Took " + (endTime - startTime) + " to databaseId.setValue");
             } catch (SQLException e) {
               logger.warn("Failed to store encrypted message in sqlite cache, ignoring: " + e.getMessage());
             }
@@ -1053,23 +1059,35 @@ public class Manager {
         Exception exception = null;
 
         if (!envelope.isReceipt()) {
+          long startTime = System.currentTimeMillis();
           try {
             content = decryptMessage(envelope);
           } catch (Exception e) {
             exception = e;
           }
+          long endTime = System.currentTimeMillis();
+          System.out.println("ohea Took " + (endTime - startTime) + " to decryptMessage");
           if (exception == null && content != null) {
+            startTime = System.currentTimeMillis();
             handleMessage(envelope, content, ignoreAttachments);
+            endTime = System.currentTimeMillis();
+            System.out.println("ohea Took " + (endTime - startTime) + " to handleMessage (1)");
           }
         }
         if (exception != null || content != null) {
+          long startTime = System.currentTimeMillis();
           handler.handleMessage(envelope, content, exception);
+          long endTime = System.currentTimeMillis();
+          System.out.println("ohea Took " + (endTime - startTime) + " to handleMessage (2)");
         }
         try {
+          long startTime = System.currentTimeMillis();
           Long id = databaseId.getValue();
           if (id != null) {
             messageQueueTable.deleteEnvelope(id);
           }
+          long endTime = System.currentTimeMillis();
+          System.out.println("ohea Took " + (endTime - startTime) + " to deleteEnvelope");
         } catch (SQLException e) {
           logger.error("failed to remove cached message from database");
         }
@@ -1087,6 +1105,7 @@ public class Manager {
       return;
     }
 
+    long startTime = System.currentTimeMillis();
     RecipientsTable recipientsTable = getRecipientsTable();
     Recipient source = recipientsTable.get((envelope.isUnidentifiedSender() && envelope.hasSourceUuid()) ? envelope.getSourceAddress() : content.getSender());
     if (content.getSenderKeyDistributionMessage().isPresent()) {
@@ -1094,6 +1113,8 @@ public class Manager {
       getMessageSender().processSenderKeyDistributionMessage(new SignalProtocolAddress(content.getSender().getIdentifier(), content.getSenderDevice()),
                                                              content.getSenderKeyDistributionMessage().get());
     }
+    long endTime = System.currentTimeMillis();
+    System.out.println("ohea Took " + (endTime - startTime) + " in handleMessage 3");
 
     if (content.getDecryptionErrorMessage().isPresent()) {
       DecryptionErrorMessage message = content.getDecryptionErrorMessage().get();
@@ -1110,6 +1131,7 @@ public class Manager {
       }
     }
 
+    startTime = System.currentTimeMillis();
     if (content.getDataMessage().isPresent()) {
       if (content.isNeedsReceipt()) {
         jobs.add(new SendDeliveryReceiptJob(this, source, content.getTimestamp()));
@@ -1117,11 +1139,17 @@ public class Manager {
       SignalServiceDataMessage message = content.getDataMessage().get();
       jobs.addAll(handleSignalServiceDataMessage(message, false, source, self, ignoreAttachments));
     }
+    endTime = System.currentTimeMillis();
+    System.out.println("ohea Took " + (endTime - startTime) + " in handleMessage 2");
 
+    startTime = System.currentTimeMillis();
     if (envelope.isPreKeySignalMessage()) {
       jobs.add(new RefreshPreKeysJob(aci));
     }
+    endTime = System.currentTimeMillis();
+    System.out.println("ohea Took " + (endTime - startTime) + " in handleMessage 3");
 
+    startTime = System.currentTimeMillis();
     if (content.getSyncMessage().isPresent()) {
       account.setMultiDevice(true);
 
@@ -1199,9 +1227,15 @@ public class Manager {
         logger.info("received verified state update from device " + content.getSenderDevice());
       }
     }
+    endTime = System.currentTimeMillis();
+    System.out.println("ohea Took " + (endTime - startTime) + " in handleMessage 4");
+
+    startTime = System.currentTimeMillis();
     for (Job job : jobs) {
       BackgroundJobRunnerThread.queue(job);
     }
+    endTime = System.currentTimeMillis();
+    System.out.println("ohea Took " + (endTime - startTime) + " in handleMessage to run jobs");
   }
 
   private SignalServiceEnvelope loadEnvelope(File file) throws IOException {

@@ -954,7 +954,7 @@ public class Manager {
             }
           }
         }
-        if (exception == null && content != null) {
+        if (exception != null || content != null) {
           handler.handleMessage(envelope, content, exception);
         }
         try {
@@ -991,7 +991,7 @@ public class Manager {
             }
           }
         }
-        if (exception == null && content != null) {
+        if (exception != null || content != null) {
           handler.handleMessage(envelope, content, exception);
         }
       } finally {
@@ -1050,7 +1050,7 @@ public class Manager {
             handleMessage(envelope, content, ignoreAttachments);
           }
         }
-        if (exception == null && content != null) {
+        if (exception != null || content != null) {
           handler.handleMessage(envelope, content, exception);
         }
         try {

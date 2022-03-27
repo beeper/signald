@@ -1,11 +1,11 @@
-FROM golang:1.16-bullseye as signaldctl
+FROM docker.io/library/golang:1.18-bullseye as signaldctl
 
 WORKDIR /src
 RUN git clone https://gitlab.com/signald/signald-go.git . \
-    && git checkout 689d560eb17da613d057097545b8d205e32c22e4 \
-    && make signaldctl
+    && git checkout e8131dc92864034910703f1125f4011a5f3e6512 \
+    && CGO_ENABLED=0 make signaldctl
 
-FROM gradle:6-jdk${JAVA_VERSION:-11} AS build
+FROM docker.io/library/gradle:7-jdk${JAVA_VERSION:-17} AS build
 
 COPY . /tmp/src
 WORKDIR /tmp/src
@@ -13,22 +13,17 @@ WORKDIR /tmp/src
 ARG CI_BUILD_REF_NAME
 ARG CI_COMMIT_SHA
 
-RUN VERSION=$(./version.sh) gradle -Dorg.gradle.daemon=false build
-RUN tar xf build/distributions/signald.tar -C /opt
+RUN VERSION=$(./version.sh) gradle -Dorg.gradle.daemon=false runtime --debug
 
-FROM gradle:6-jre${JAVA_VERSION:-11} AS release
-
-USER root
-COPY --from=build /opt/signald /opt/signald/
-RUN ln -sf /opt/signald/bin/signald /usr/local/bin/
-
-COPY --from=signaldctl /src/signaldctl /opt/signaldctl
-RUN ln -sf /opt/signaldctl /usr/local/bin/
-RUN mkdir -p /root/.config/ && echo "socketpath: /signald/signald.sock" > /root/.config/signaldctl.yaml
+FROM debian:stable-slim AS release
+RUN useradd -mu 1337 signald && mkdir /signald && chown -R signald:signald /signald
+COPY --from=build /tmp/src/build/image /
+COPY --from=signaldctl /src/signaldctl /bin/signaldctl
+ADD docker-entrypoint.sh /bin/entrypoint.sh
+USER signald
+RUN ["/bin/signaldctl", "config", "set", "socketpath", "/signald/signald.sock"]
 
 VOLUME /signald
 
-ADD docker-entrypoint.sh /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/bin/entrypoint.sh"]
 CMD ["-d", "/signald", "-s", "/signald/signald.sock"]

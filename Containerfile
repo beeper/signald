@@ -13,7 +13,7 @@ WORKDIR /tmp/src
 ARG CI_BUILD_REF_NAME
 ARG CI_COMMIT_SHA
 
-RUN VERSION=$(./version.sh) gradle -Dorg.gradle.daemon=false runtime --debug
+RUN VERSION=$(./version.sh) gradle -Dorg.gradle.daemon=false runtime
 
 FROM debian:stable-slim AS release
 RUN useradd -mu 1337 signald && mkdir /signald && chown -R signald:signald /signald

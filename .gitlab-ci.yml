@@ -153,9 +153,12 @@ build deb armv7-unknown-linux-gnueabihf:
     - export VERSION="$(./version.sh | sed 's#+#-#g' | sed 's#/#-#g')"
     - DOCKER_PLATFORM=$(echo "${PLATFORM:6}" | sed 's#/#-#g')
   script:
-    - docker buildx build --platform "${PLATFORM}" --build-arg "CI_BUILD_REF_NAME=${CI_BUILD_REF_NAME}" --build-arg "CI_COMMIT_SHA=${CI_COMMIT_SHA}" -t "${CI_REGISTRY_IMAGE}:${VERSION}-${DOCKER_PLATFORM}" --push .
-    - 'sed -i "s#FROM .*#FROM ${CI_REGISTRY_IMAGE}:${VERSION}-${DOCKER_PLATFORM}#g" uid-transition.Containerfile'
-    - docker buildx build --platform "${PLATFORM}" --build-arg "CI_BUILD_REF_NAME=${CI_BUILD_REF_NAME}" --build-arg "CI_COMMIT_SHA=${CI_COMMIT_SHA}" -t "${CI_REGISTRY_IMAGE}:${VERSION}-${DOCKER_PLATFORM}-uid-transition" --push -f uid-transition.Containerfile .
+    - docker buildx build --platform "${PLATFORM}" --build-arg "CI_BUILD_REF_NAME=${CI_BUILD_REF_NAME}" --build-arg "CI_COMMIT_SHA=${CI_COMMIT_SHA}" -t "${CI_REGISTRY_IMAGE}:${VERSION}-${DOCKER_PLATFORM}" --push -f "${CONTAINERFILE:-Containerfile}" .
+    - |
+      if [[ "${CONTAINERFILE}" == "Containerfile" ]]; then 
+        sed -i "s#FROM .*#FROM ${CI_REGISTRY_IMAGE}:${VERSION}-${DOCKER_PLATFORM}#g" uid-transition.Containerfile'
+        docker buildx build --platform "${PLATFORM}" --build-arg "CI_BUILD_REF_NAME=${CI_BUILD_REF_NAME}" --build-arg "CI_COMMIT_SHA=${CI_COMMIT_SHA}" -t "${CI_REGISTRY_IMAGE}:${VERSION}-${DOCKER_PLATFORM}-uid-transition" --push -f uid-transition.Containerfile .
+      fi
   rules:
     - if: '$CI_PROJECT_NAMESPACE == "signald" && $CI_COMMIT_REF_PROTECTED == "true"'
       when: on_success
@@ -171,11 +174,13 @@ docker arm64:
   extends: .docker-buildx
   variables:
     PLATFORM: linux/arm64/v8
+    CONTAINERFILE: arm.Containerfile
 
 docker armv7:
   extends: .docker-buildx
   variables:
     PLATFORM: linux/arm/v7
+    CONTAINERFILE: arm.Containerfile
 
 docker manifest:
   stage: publish

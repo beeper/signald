@@ -5,8 +5,8 @@ RUN git clone https://gitlab.com/signald/signald-go.git . \
     && git checkout e8131dc92864034910703f1125f4011a5f3e6512 \
     && make signaldctl
 
-FROM docker.io/library/openjdk:${JAVA_VERSION:-17} AS build
-
+FROM docker.io/library/eclipse-temurin:17 AS build
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/{apt,dpkg,cache,log}/
 COPY . /tmp/src
 WORKDIR /tmp/src
 

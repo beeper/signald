@@ -3,7 +3,7 @@ FROM docker.io/library/golang:1.18-bullseye as signaldctl
 WORKDIR /src
 RUN git clone https://gitlab.com/signald/signald-go.git . \
     && git checkout e8131dc92864034910703f1125f4011a5f3e6512 \
-    && CGO_ENABLED=0 make signaldctl
+    && make signaldctl
 
 FROM docker.io/library/gradle:7-jdk${JAVA_VERSION:-17} AS build
 

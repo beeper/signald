@@ -765,7 +765,10 @@ public class Manager {
               long id = messageQueueTable.storeEnvelope(encryptedEnvelope);
               databaseId.setValue(id);
             } catch (SQLException e) {
-              logger.warn("Failed to store encrypted message in database, ignoring: " + e.getMessage());
+              // Force the websocket to close so that we don't ack the message,
+              // and hopefully when we reconnect, it sends the message again.
+              websocket.disconnect();
+              throw new AssertionError(e);
             }
           });
           if (result.isPresent()) {

@@ -231,7 +231,7 @@ public class Database {
           return fn.get();
         } catch (SQLException e) {
           if (e instanceof SQLiteException) {
-            SQLiteException sqliteException = (SQLiteException) e;
+            SQLiteException sqliteException = (SQLiteException)e;
             if (sqliteException.getResultCode() == SQLiteErrorCode.SQLITE_BUSY) {
               logger.warn("SQLite database is busy, could not complete query (retry {}/{})", i, maxRetries);
 

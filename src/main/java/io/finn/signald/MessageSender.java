@@ -169,6 +169,9 @@ public class MessageSender {
       List<SignalServiceAddress> recipientAddresses = senderKeyTargets.stream().map(Recipient::getAddress).collect(Collectors.toList());
 
       logger.debug("sending group message to {} members via a distribution group", recipientAddresses.size());
+      for (var address : recipientAddresses) {
+        logger.debug("sending to {} ({})", address.getNumber(), address.getIdentifier());
+      }
       SenderKeyGroupEventsLogger sendEvents = new SenderKeyGroupEventsLogger();
       try {
         List<SendMessageResult> skdmResults = messageSender.sendGroupDataMessage(distributionId, recipientAddresses, access, isRecipientUpdate, ContentHint.DEFAULT,
@@ -176,20 +179,25 @@ public class MessageSender {
         Set<ServiceId> networkFailAddressesForRetry = new HashSet<>();
         if (sendEvents.isSyncMessageSent()) {
           isRecipientUpdate = true; // prevent duplicate sync messages from being sent
+          logger.debug("isSyncMessageSent", recipientAddresses.size());
         }
         for (var result : skdmResults) {
           if (result.isSuccess()) {
+            logger.debug("sending to {} ({}) was a success", result.getAddress().getNumber(), result.getAddress().getIdentifier());
             results.add(result);
           } else if (result.getProofRequiredFailure() != null) {
             // do not retry if reCAPTCHA required
             // note: isNetworkFailure is true if proofRequiredFailure is present, hence this check must come before the
             // isNetworkFailure branch
+            logger.debug("sending to {} ({}) gave proof required", result.getAddress().getNumber(), result.getAddress().getIdentifier());
             results.add(result);
           } else if (result.isNetworkFailure()) {
             // always guaranteed to have an ACI; don't use address for HashSet because of ambiguity with e164 in server
             // responses
+            logger.debug("sending to {} ({}) gave network error", result.getAddress().getNumber(), result.getAddress().getIdentifier());
             networkFailAddressesForRetry.add(result.getAddress().getServiceId());
           } else if (result.isUnregisteredFailure()) {
+            logger.debug("sending to {} ({}) gave unregistered error", result.getAddress().getNumber(), result.getAddress().getIdentifier());
             handleUnregisteredFailure(result);
             results.add(result);
           }

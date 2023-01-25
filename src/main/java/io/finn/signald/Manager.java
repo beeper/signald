@@ -741,7 +741,13 @@ public class Manager {
 
     if (content.getDecryptionErrorMessage().isPresent()) {
       DecryptionErrorMessage message = content.getDecryptionErrorMessage().get();
-      logger.debug("Received a decryption error message (resend request for {})", message.getTimestamp());
+      if (message.getDeviceId() != account.getDeviceId()) {
+        logger.debug("[RetryReceipt] Received a DecryptionErrorMessage targeting another device on the account. Ignoring.");
+        return;
+      }
+
+      logger.warn("Received a retry receipt from {} (resend request for {})", source.getUUID(), message.getTimestamp());
+
       if (message.getRatchetKey().isPresent()) {
         int sourceDeviceId = (envelope.isUnidentifiedSender() && envelope.hasSourceUuid()) ? envelope.getSourceDevice() : content.getSenderDevice();
         if (message.getDeviceId() == account.getDeviceId() && account.getProtocolStore().isCurrentRatchetKey(source, sourceDeviceId, message.getRatchetKey().get())) {

@@ -9,6 +9,7 @@ package io.finn.signald;
 import static java.nio.file.attribute.PosixFilePermission.*;
 import static org.whispersystems.signalservice.internal.util.Util.isEmpty;
 
+import io.finn.signald.MessageSendLogStore;
 import io.finn.signald.clientprotocol.v1.JsonGroupV2Info;
 import io.finn.signald.db.*;
 import io.finn.signald.exceptions.*;
@@ -90,6 +91,8 @@ public class Manager {
   private final Account account;
   private final Recipient self;
   private final SignalDependencies dependencies;
+  private final MessageSendLogStore messageSendLogStore;
+
   public static Manager get(UUID uuid) throws SQLException, NoSuchAccountException, IOException, InvalidKeyException, ServerNotFoundException, InvalidProxyException {
     return get(ACI.from(uuid));
   }
@@ -151,6 +154,7 @@ public class Manager {
     serviceConfiguration = server.getSignalServiceConfiguration();
     unidentifiedSenderTrustRoot = server.getUnidentifiedSenderRoot();
     dependencies = account.getSignalDependencies();
+    messageSendLogStore = new MessageSendLogStore();
     logger.info("Created a manager for " + Util.redact(aci.toString()));
     synchronized (managers) { managers.put(aci.toString(), this); }
   }

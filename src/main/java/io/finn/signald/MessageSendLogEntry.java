@@ -44,6 +44,7 @@ public class MessageSendLogEntry {
 
   public boolean matches(long timestamp) { return this.timestamp == timestamp; }
 
+  public long getTimestamp() { return timestamp; }
   public Optional<GroupIdentifier> getGroupId() { return groupId; }
   public SignalServiceProtos.Content getContent() { return content; }
 }

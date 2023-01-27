@@ -9,7 +9,6 @@ package io.finn.signald;
 import static java.nio.file.attribute.PosixFilePermission.*;
 import static org.whispersystems.signalservice.internal.util.Util.isEmpty;
 
-import io.finn.signald.MessageSendLogStore;
 import io.finn.signald.clientprotocol.v1.JsonGroupV2Info;
 import io.finn.signald.db.*;
 import io.finn.signald.exceptions.*;
@@ -64,7 +63,6 @@ import org.whispersystems.signalservice.api.groupsv2.InvalidGroupStateException;
 import org.whispersystems.signalservice.api.messages.*;
 import org.whispersystems.signalservice.api.messages.multidevice.*;
 import org.whispersystems.signalservice.api.push.ACI;
-import org.whispersystems.signalservice.api.push.ServiceId;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.api.push.exceptions.MissingConfigurationException;
 import org.whispersystems.signalservice.api.storage.StorageKey;
@@ -91,7 +89,6 @@ public class Manager {
   private final Account account;
   private final Recipient self;
   private final SignalDependencies dependencies;
-  private final MessageSendLogStore messageSendLogStore;
 
   public static Manager get(UUID uuid) throws SQLException, NoSuchAccountException, IOException, InvalidKeyException, ServerNotFoundException, InvalidProxyException {
     return get(ACI.from(uuid));
@@ -154,7 +151,6 @@ public class Manager {
     serviceConfiguration = server.getSignalServiceConfiguration();
     unidentifiedSenderTrustRoot = server.getUnidentifiedSenderRoot();
     dependencies = account.getSignalDependencies();
-    messageSendLogStore = new MessageSendLogStore();
     logger.info("Created a manager for " + Util.redact(aci.toString()));
     synchronized (managers) { managers.put(aci.toString(), this); }
   }
@@ -341,7 +337,7 @@ public class Manager {
               }
             }
             if (r.isSuccess()) {
-              messageSendLogStore.add(new MessageSendLogEntry(message.getTimestamp(), r.getSuccess().getContent().get()));
+              MessageSendLogStore.get(account.getACI()).add(new MessageSendLogEntry(message.getTimestamp(), r.getSuccess().getContent().get()));
             }
           }
           return result;
@@ -365,7 +361,7 @@ public class Manager {
         }
         for (var r : results) {
           if (r.isSuccess()) {
-            messageSendLogStore.add(new MessageSendLogEntry(message.getTimestamp(), r.getSuccess().getContent().get()));
+            MessageSendLogStore.get(account.getACI()).add(new MessageSendLogEntry(message.getTimestamp(), r.getSuccess().getContent().get()));
           }
         }
         return results;
@@ -406,7 +402,7 @@ public class Manager {
         }
         for (var r : results) {
           if (r.isSuccess()) {
-            messageSendLogStore.add(new MessageSendLogEntry(message.getTimestamp(), r.getSuccess().getContent().get()));
+            MessageSendLogStore.get(account.getACI()).add(new MessageSendLogEntry(message.getTimestamp(), r.getSuccess().getContent().get()));
           }
         }
         return results;
@@ -776,11 +772,11 @@ public class Manager {
         db.SenderKeySharedTable.deleteSharedWith(source);
       }
 
-      var messageLogEntry = messageSendLogStore.find(message.getTimestamp());
+      var messageLogEntry = MessageSendLogStore.get(account.getACI()).find(message.getTimestamp());
       if (!messageLogEntry.isPresent()) {
         logger.warn("Couldn't find message to resend");
       } else {
-        var resendMessageJob = new ResendMessageJob(getAccount(), content.getSender().getIdentifier(), message.getTimestamp(), messageLogEntry.get());
+        var resendMessageJob = new ResendMessageJob(account, content.getSender().getIdentifier(), message.getTimestamp(), messageLogEntry.get());
         BackgroundJobRunnerThread.queue(resendMessageJob);
       }
     }

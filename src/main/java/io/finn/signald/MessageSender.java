@@ -297,6 +297,7 @@ public class MessageSender {
         if (!recipient.isRegistered()) {
           recipientsTable.setRegistrationStatus(recipient, true);
         }
+        MessageSendLogStore.get(account.getACI()).add(new MessageSendLogEntry(message.build().getTimestamp(), r.getSuccess().getContent().get()));
       }
     }
     return results;
@@ -348,9 +349,11 @@ public class MessageSender {
         messageBuilder.withExpiration(contact != null ? contact.messageExpirationTime : 0);
         message = messageBuilder.build();
         try (SignalSessionLock.Lock ignored = account.getSignalDependencies().getSessionLock().acquire()) {
-          results.add(messageSender.sendDataMessage(recipient.getAddress(), new UnidentifiedAccessUtil(account.getACI()).getAccessPairFor(recipient), ContentHint.DEFAULT, message,
-                                                    IndividualSendEventsLogger.INSTANCE, isUrgent, recipient.isNeedsPniSignature()));
+          var result = messageSender.sendDataMessage(recipient.getAddress(), new UnidentifiedAccessUtil(account.getACI()).getAccessPairFor(recipient), ContentHint.DEFAULT, message,
+                                                     IndividualSendEventsLogger.INSTANCE, isUrgent, recipient.isNeedsPniSignature());
+          results.add(result);
 
+          MessageSendLogStore.get(account.getACI()).add(new MessageSendLogEntry(message.getTimestamp(), result.getSuccess().getContent().get()));
         } catch (org.whispersystems.signalservice.api.crypto.UntrustedIdentityException e) {
           if (e.getIdentityKey() != null) {
             account.getProtocolStore().handleUntrustedIdentityException(e);

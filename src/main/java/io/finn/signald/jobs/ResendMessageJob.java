@@ -9,6 +9,7 @@ package io.finn.signald.jobs;
 
 import com.google.protobuf.ByteString;
 import io.finn.signald.Account;
+import io.finn.signald.MessageReceiver;
 import io.finn.signald.MessageSendLogEntry;
 import io.finn.signald.db.*;
 import io.finn.signald.exceptions.InvalidProxyException;
@@ -91,5 +92,8 @@ public class ResendMessageJob implements Job {
       logger.warn("failed to resend message to {}", recipient.getId());
       return;
     }
+
+    MessageReceiver.broadcastMessageResendSuccess(account.getUUID(), timestamp);
+    logger.warn("successfully resent message to {}", recipient.getId());
   }
 }

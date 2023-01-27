@@ -340,6 +340,9 @@ public class Manager {
                 Sentry.captureException(e);
               }
             }
+            if (r.isSuccess()) {
+              messageSendLogStore.add(new MessageSendLogEntry(message.getTimestamp(), r.getSuccess().getContent().get()));
+            }
           }
           return result;
         } catch (org.whispersystems.signalservice.api.crypto.UntrustedIdentityException e) {
@@ -359,6 +362,11 @@ public class Manager {
         } catch (org.whispersystems.signalservice.api.crypto.UntrustedIdentityException e) {
           account.getProtocolStore().handleUntrustedIdentityException(e);
           results.add(SendMessageResult.identityFailure(self.getAddress(), e.getIdentityKey()));
+        }
+        for (var r : results) {
+          if (r.isSuccess()) {
+            messageSendLogStore.add(new MessageSendLogEntry(message.getTimestamp(), r.getSuccess().getContent().get()));
+          }
         }
         return results;
       } else {
@@ -394,6 +402,11 @@ public class Manager {
               account.getProtocolStore().handleUntrustedIdentityException(e);
             }
             results.add(SendMessageResult.identityFailure(recipient.getAddress(), e.getIdentityKey()));
+          }
+        }
+        for (var r : results) {
+          if (r.isSuccess()) {
+            messageSendLogStore.add(new MessageSendLogEntry(message.getTimestamp(), r.getSuccess().getContent().get()));
           }
         }
         return results;
@@ -761,6 +774,14 @@ public class Manager {
       } else {
         logger.debug("Reset shared sender keys with this recipient");
         db.SenderKeySharedTable.deleteSharedWith(source);
+      }
+
+      var messageLogEntry = messageSendLogStore.find(message.getTimestamp());
+      if (!messageLogEntry.isPresent()) {
+        logger.warn("Couldn't find message to resend");
+      } else {
+        var resendMessageJob = new ResendMessageJob(getAccount(), content.getSender().getIdentifier(), message.getTimestamp(), messageLogEntry.get());
+        BackgroundJobRunnerThread.queue(resendMessageJob);
       }
     }
 

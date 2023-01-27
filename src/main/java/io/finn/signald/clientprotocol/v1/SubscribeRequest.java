@@ -178,6 +178,11 @@ public class SubscribeRequest implements RequestType<Empty> {
     }
 
     @Override
+    public void broadcastMessageResendSuccess(long timestamp) throws IOException {
+      broadcast(new ClientMessageWrapper(account, new MessageResendSuccess(timestamp)));
+    }
+
+    @Override
     public boolean isClosed() {
       return socket.isClosed();
     }

@@ -125,6 +125,16 @@ public class MessageReceiver implements Manager.ReceiveMessageHandler, Runnable 
     }
   }
 
+  public static void broadcastMessageResendSuccess(UUID accountUUID, long timestamp) throws SQLException {
+    synchronized (receivers) {
+      MessageReceiver receiver = receivers.get(accountUUID.toString());
+      if (receiver == null) {
+        return;
+      }
+      receiver.sockets.broadcastMessageResendSuccess(timestamp);
+    }
+  }
+
   // must be called from within a synchronized(receivers) block
   private static boolean synchronizedUnsubscribe(ACI aci, Socket s) {
     if (!receivers.containsKey(aci.toString())) {
@@ -313,6 +323,8 @@ public class MessageReceiver implements Manager.ReceiveMessageHandler, Runnable 
     public void broadcastListenStopped(Throwable exception) throws SQLException { broadcast(r -> r.broadcastListenStopped(exception)); }
 
     public void broadcastStorageStateChange(long version) throws SQLException { broadcast(r -> r.broadcastStorageChange(version)); }
+
+    public void broadcastMessageResendSuccess(long timestamp) throws SQLException { broadcast(r -> r.broadcastMessageResendSuccess(timestamp)); }
 
     private interface broadcastMessage {
       void broadcast(MessageEncoder r) throws IOException, SQLException;

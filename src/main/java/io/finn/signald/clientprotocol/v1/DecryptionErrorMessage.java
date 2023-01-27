@@ -8,7 +8,6 @@
 package io.finn.signald.clientprotocol.v1;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Optional;
 import org.whispersystems.util.Base64;
 
 public class DecryptionErrorMessage {

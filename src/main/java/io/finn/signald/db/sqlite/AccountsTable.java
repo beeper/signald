@@ -45,7 +45,11 @@ public class AccountsTable implements IAccountsTable {
 
   @Override
   public void DeleteAccount(ACI aci, String legacyUsername) throws SQLException {
-    Database.getConn().setAutoCommit(false);
+    try {
+      Database.getConn().setAutoCommit(false);
+    } catch (SQLException e) {
+      logger.warn("failed to set auto-commit, likely already in a transaction", e);
+    }
     // TODO we should use ON DELETE CASCADE for SQLite as well eventually
     var query = "DELETE FROM " + TABLE_NAME + " WHERE " + UUID + " = ?";
     try (var statement = Database.getConn().prepareStatement(query)) {
@@ -63,8 +67,17 @@ public class AccountsTable implements IAccountsTable {
     Database.Get(aci).SenderKeySharedTable.deleteAccount(aci);
     Database.Get(aci).SenderKeysTable.deleteAccount(aci);
     Database.Get(aci).SignedPreKeysTable.deleteAccount(aci);
-    Database.getConn().commit();
-    Database.getConn().setAutoCommit(true);
+
+    try {
+      Database.getConn().commit();
+    } catch (SQLException e) {
+      logger.warn("failed to commit transaction", e);
+    }
+    try {
+      Database.getConn().setAutoCommit(true);
+    } catch (SQLException e) {
+      logger.warn("failed to exit transaction", e);
+    }
   }
 
   @Override

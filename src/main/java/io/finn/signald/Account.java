@@ -227,7 +227,13 @@ public class Account {
     }
 
     logger.debug("deleting account from database");
-    Database.DeleteAccount(aci, getE164());
+    try {
+      Database.DeleteAccount(aci, getE164());
+    } catch (SQLException e) {
+      logger.error("error deleting account", e);
+      Sentry.captureException(e);
+      throw e;
+    }
   }
 
   public void refreshIfNeeded() throws SQLException, NoSuchAccountException, ServerNotFoundException, IOException, InvalidProxyException {

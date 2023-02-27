@@ -55,11 +55,19 @@ public class MessageReceiver implements Manager.ReceiveMessageHandler, Runnable 
   public static void subscribe(ACI aci, MessageEncoder receiver)
       throws SQLException, IOException, NoSuchAccountException, InvalidKeyException, ServerNotFoundException, InvalidProxyException {
     synchronized (receivers) {
+      // TODO: TOTAL HACK
+      if (receivers.containsKey(aci.toString())) {
+        logger.debug("unsubscribing everyone from " + aci.toString());
+        MessageReceiver.unsubscribeAll(aci.uuid());
+      }
+
       if (!receivers.containsKey(aci.toString())) {
+        logger.debug("creating message receiver for " + aci.toString());
         MessageReceiver r = new MessageReceiver(aci);
         receivers.put(aci.toString(), r);
         new Thread(r).start();
       }
+      logger.debug("adding receiver for " + aci.toString());
       receivers.get(aci.toString()).sockets.add(receiver);
     }
     logger.debug("message receiver for " + Util.redact(aci) + " got new subscriber. subscriber count: " + receivers.get(aci.toString()).sockets.size());
@@ -141,7 +149,9 @@ public class MessageReceiver implements Manager.ReceiveMessageHandler, Runnable 
       return false;
     }
 
+    logger.debug("removing socket for " + aci.toString());
     boolean removed = receivers.get(aci.toString()).remove(s);
+    logger.debug((removed ? "removed" : "DID NOT REMOVE") + " socket for " + aci.toString());
     if (removed) {
       logger.debug("message receiver for " + Util.redact(aci) + " lost a subscriber. subscriber count: " + receivers.get(aci.toString()).sockets.size());
     }
@@ -287,6 +297,7 @@ public class MessageReceiver implements Manager.ReceiveMessageHandler, Runnable 
     }
 
     public synchronized void removeAll() {
+      logger.debug("REMOVING ALL LISTENERS");
       synchronized (listeners) { listeners.removeAll(listeners); }
     }
 

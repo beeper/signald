@@ -9,6 +9,7 @@ package io.finn.signald.clientprotocol.v1;
 
 import io.finn.signald.Account;
 import io.finn.signald.Empty;
+import io.finn.signald.MessageReceiver;
 import io.finn.signald.annotations.Doc;
 import io.finn.signald.annotations.ExampleValue;
 import io.finn.signald.annotations.ProtocolType;
@@ -35,6 +36,7 @@ public class DeleteAccountRequest implements RequestType<Empty> {
   public Empty run(Request request) throws InternalError, InvalidProxyError, ServerNotFoundError, NoSuchAccountError, SQLError {
     Account a = Common.getAccount(account);
     try {
+      MessageReceiver.unsubscribe(a.getACI(), request.getSocket());
       a.delete(server);
     } catch (IOException e) {
       throw new InternalError("error deleting account", e);

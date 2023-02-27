@@ -18,9 +18,6 @@ import io.finn.signald.clientprotocol.RequestType;
 import io.finn.signald.clientprotocol.v1.exceptions.InternalError;
 import io.finn.signald.clientprotocol.v1.exceptions.NoSuchAccountError;
 import io.finn.signald.clientprotocol.v1.exceptions.SQLError;
-import io.finn.signald.db.Database;
-import io.finn.signald.exceptions.NoSuchAccountException;
-import java.sql.SQLException;
 import org.whispersystems.signalservice.api.push.ACI;
 
 @ProtocolType("unsubscribe")

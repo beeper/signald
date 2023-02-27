@@ -59,6 +59,9 @@ public class MessageReceiver implements Manager.ReceiveMessageHandler, Runnable 
       if (receivers.containsKey(aci.toString())) {
         logger.debug("unsubscribing everyone from " + aci.toString());
         MessageReceiver.unsubscribeAll(aci.uuid());
+        logger.debug("deleting signal dependencies for " + aci.toString());
+        SignalDependencies.delete(aci);
+        receivers.remove(aci.toString());
       }
 
       if (!receivers.containsKey(aci.toString())) {

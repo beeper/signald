@@ -61,6 +61,11 @@ public class MessageReceiver implements Manager.ReceiveMessageHandler, Runnable 
         MessageReceiver.unsubscribeAll(aci.uuid());
         logger.debug("deleting signal dependencies for " + aci.toString());
         SignalDependencies.delete(aci);
+        try {
+          Manager.get(aci).deleteAccount();
+        } catch (Exception e) {
+          logger.debug("failed to delete manager for " + aci.toString());
+        }
         receivers.remove(aci.toString());
       }
 

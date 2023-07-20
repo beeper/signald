@@ -21,7 +21,12 @@ RUN useradd -mu 1337 signald && mkdir /signald && chown -R signald:signald /sign
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
-COPY --from=build /tmp/src/build/image /
+
+COPY --from=build /tmp/src/build/image/bin /bin
+COPY --from=build /tmp/src/build/image/conf /conf
+COPY --from=build /tmp/src/build/image/legal /legal
+COPY --from=build /tmp/src/build/image/lib /lib
+COPY --from=build /tmp/src/build/image/release /release
 COPY --from=signaldctl /src/signaldctl /bin/signaldctl
 ADD docker-entrypoint.sh /bin/entrypoint.sh
 USER signald
